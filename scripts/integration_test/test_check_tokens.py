@@ -11,4 +11,4 @@ def test_check_tokens():
         errs.append(err)
     filter_empty_errs = [err for err in errs if err != '']
     filter_assetion_errs = [err for err in filter_empty_errs if 'raise Exception(f"{exceptions} exception/s' not in err]
-    assert len(filter_assetion_errs) == 0
+    assert not filter_assetion_errs

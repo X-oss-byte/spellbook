@@ -14,19 +14,20 @@ class TableLocationManager:
 
     def fetch_tables_dict(self):
         bash_response = subprocess.run(
-            f'dbt list --output json --select config.materialized:table',
-            capture_output=True, shell=True).stdout.decode("utf-8")
+            'dbt list --output json --select config.materialized:table',
+            capture_output=True,
+            shell=True,
+        ).stdout.decode("utf-8")
         table_strings = bash_response.split('\n')[:-1]
-        tables_dict = {}
-        for table_string in table_strings:
-            tables_dict[json.loads(table_string)['name']] = json.loads(table_string)
-        return tables_dict
+        return {
+            json.loads(table_string)['name']: json.loads(table_string)
+            for table_string in table_strings
+        }
 
     def get_s3_location(self, table_dict):
         schema = table_dict['config'].get('schema')
         name = table_dict['config'].get('alias', table_dict['config'].get('name'))
-        s3_location = f's3a://{self.s3_base}/{schema}/{name}'
-        return s3_location
+        return f's3a://{self.s3_base}/{schema}/{name}'
 
 
     def get_alter_command(self, table_dict):
@@ -38,11 +39,12 @@ class TableLocationManager:
         {% endset %}
         {% do run_query($var) %}
         """)
-        alter_command = alter_template.substitute(var=table_dict['name'].replace('.', ''),
-                                                  clone_name=table_name+'_clone',
-                                                  table_name=table_name,
-                                                  s3_path=s3_path)
-        return alter_command
+        return alter_template.substitute(
+            var=table_dict['name'].replace('.', ''),
+            clone_name=f'{table_name}_clone',
+            table_name=table_name,
+            s3_path=s3_path,
+        )
 
     def get_delete_command(self, table_dict):
         table_name = f"{table_dict['config']['schema']}.{table_dict['config'].get('alias', table_dict['name'])}"
@@ -53,10 +55,11 @@ class TableLocationManager:
         {% endset %}
         {% do run_query($var) %}
         """)
-        drop_command = drop_template.substitute(var=table_dict['name'].replace('.', '')+'_drop',
-                                                  table_name=table_name,
-                                                  s3_path=s3_path)
-        return drop_command
+        return drop_template.substitute(
+            var=table_dict['name'].replace('.', '') + '_drop',
+            table_name=table_name,
+            s3_path=s3_path,
+        )
 
     def get_rename_command(self, table_dict):
         table_name = f"{table_dict['config']['schema']}.{table_dict['config'].get('alias', table_dict['name'])}"
@@ -66,23 +69,23 @@ class TableLocationManager:
         {% endset %}
         {% do run_query($var) %}
         """)
-        rename_command = rename_template.substitute(var=table_dict['name'].replace('.', '')+'_rename',
-                                                  clone_name=table_name+'_clone',
-                                                  table_name=table_name)
-        return rename_command
+        return rename_template.substitute(
+            var=table_dict['name'].replace('.', '') + '_rename',
+            clone_name=f'{table_name}_clone',
+            table_name=table_name,
+        )
 
     def generate_macro_file(self, tables_dict):
-        f = open("../macros/dune/alter_table_locations.sql", 'w')
-        f.write("{% macro alter_table_locations() %}")
-        for table, table_dict in tables_dict.items():
-            # alter_command = self.get_alter_command(table_dict)
-            # f.write(alter_command)
-            drop_command = self.get_delete_command(table_dict)
-            f.write(drop_command)
-            rename_command = self.get_rename_command(table_dict)
-            f.write(rename_command)
-        f.write("{% endmacro %}")
-        f.close()
+        with open("../macros/dune/alter_table_locations.sql", 'w') as f:
+            f.write("{% macro alter_table_locations() %}")
+            for table, table_dict in tables_dict.items():
+                # alter_command = self.get_alter_command(table_dict)
+                # f.write(alter_command)
+                drop_command = self.get_delete_command(table_dict)
+                f.write(drop_command)
+                rename_command = self.get_rename_command(table_dict)
+                f.write(rename_command)
+            f.write("{% endmacro %}")
 
     def main(self):
         tables_dict = self.fetch_tables_dict()

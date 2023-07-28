@@ -36,7 +36,7 @@ class TokenChecker:
 
     @staticmethod
     def get_tokens():
-        logging.info(f"INFO: getting all the coins from coinpaprika...")
+        logging.info("INFO: getting all the coins from coinpaprika...")
         try:
             resp = requests.get("https://api.coinpaprika.com/v1/coins")
             resp.raise_for_status()
