@@ -36,9 +36,11 @@ class Sources:
 def missing_freshness_checks(sources, manifest, check_type='warn'):
     sources = list(set(sources))
     source_defintions = {source: manifest['sources'][source] for source in sources}
-    empty_checks = [key for key, value in source_defintions.items() if
-                    value['freshness'][f'{check_type}_after']['count'] is None]
-    return empty_checks
+    return [
+        key
+        for key, value in source_defintions.items()
+        if value['freshness'][f'{check_type}_after']['count'] is None
+    ]
 
 
 class MissingSourceFreshnessChecks(Exception):

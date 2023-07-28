@@ -14,12 +14,10 @@ class ManifestEditor:
         compiled_code = node.get('compiled_code', '')
 
         if raw_code.count('\n') > max_lines:
-            node['raw_code'] = ''.join(
-                raw_code.split('\n')[0:max_lines])
+            node['raw_code'] = ''.join(raw_code.split('\n')[:max_lines])
 
         if compiled_code.count('\n') > max_lines:
-            node['compiled_code'] = ''.join(
-                compiled_code.split('\n')[0:max_lines])
+            node['compiled_code'] = ''.join(compiled_code.split('\n')[:max_lines])
 
         return node
 
@@ -30,9 +28,8 @@ class ManifestEditor:
         self.manifest_dict["nodes"] = new_nodes
 
     def write_new_manifest(self):
-        f = open('../target/manifest.json', 'w')
-        f.write(json.dumps(self.manifest_dict))
-        f.close()
+        with open('../target/manifest.json', 'w') as f:
+            f.write(json.dumps(self.manifest_dict))
 
     def main(self):
         self.slim_manifest()
